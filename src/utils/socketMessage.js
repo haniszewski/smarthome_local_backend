@@ -15,13 +15,15 @@ export class SocketMessage {
    * @param {Buffer} buffer
    */
   constructor(buffer) {
+    this.params = [];
     if (!buffer) {
       return;
     }
     this.buffer = buffer;
     this.type = this.getMessageType(buffer);
     this.length = this.getMessageLength(buffer);
-    this.params = [];
+
+    console.log(`Decoding message type ${this.type}`);
 
     switch (this.type) {
       case 1:
@@ -73,14 +75,14 @@ export class SocketMessage {
     this.type = 6;
   }
 
-  getRelaysData(){
-    const res = []
-    for(const param in this.params){
-      if(param.type === 3){
+  getRelaysData() {
+    const res = [];
+    for (const param in this.params) {
+      if (param.type === 3) {
         res.push({
           id: param.relayId,
-          status: param.relayStatus
-        })
+          status: param.relayStatus,
+        });
       }
     }
     return res;
@@ -108,12 +110,11 @@ export class SocketMessage {
   }
 
   createRequestWhoMsg() {
-    
     return Buffer.from([0x00, 0x00, 0x01, 0x00, 0x05]);
   }
 
   encode() {
-    console.log(this.type);
+    console.log(`Encoding message type: ${this.type}`);
     switch (this.type) {
       case 0:
         return Buffer.from([0x80, 0x00, 0x00, 0x00, 0x05]);
@@ -123,6 +124,21 @@ export class SocketMessage {
         break;
       case 4:
         return Buffer.from([0x80, 0x00, 0x04, 0x00, 0x05]);
+        break;
+      case 6:
+        {
+          let respBuff = Buffer.from([0x00,0x00,0x06,0x00,0x00]);
+          this.params.forEach((param) => {
+            respBuff = Buffer.concat([respBuff, param.encode()]);
+            // respBuff.join(param.encode());
+            console.log(param.encode());
+            
+          })
+          console.log('----');
+          console.log(respBuff);
+          console.log('----');
+          return respBuff;
+        }
         break;
     }
   }

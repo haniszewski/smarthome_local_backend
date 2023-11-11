@@ -3,6 +3,7 @@ import { SocketMessage } from "./socketMessage.js";
 import { Device } from "../models/device.js";
 import { Sensor } from "../models/sensor.js";
 import { Relay } from "../models/relay.js";
+import { MessageParam } from "./messageParam.js";
 
 // deviceHandler.js
 class DeviceHandler {
@@ -27,6 +28,8 @@ class DeviceHandler {
     }, 5000);
 
     this.sendRequestWho();
+
+    this.startRequestingStatus();
   }
 
   initHandlers() {
@@ -41,22 +44,45 @@ class DeviceHandler {
    */
   async handleResponseWho(msg) {
     // Find device
+    console.log(`---ASDASDASDASD----`);
     const device = await Device.getById(msg.hwid);
     console.log(device);
-    if(device != false){
+    if (device != false) {
       const deviceSensors = await Sensor.getByDeviceId(device.id);
       console.log(deviceSensors);
-      if(deviceSensors != false){
+      if (deviceSensors != false) {
         this.sensors = deviceSensors;
       }
+      console.log(`---    ----`);
+      console.log(`---    ----`);
+      console.log(`---    ----`);
+      console.log(`---RELAY SEARCH----`);
+      console.log(`---    ----`);
+      console.log(`---    ----`);
       const deviceRelays = await Relay.getByDeviceId(device.id);
-      if(deviceRelays != false){
+      if (deviceRelays != false) {
         this.relays = deviceRelays;
         console.log(this.relays);
+
+        this.setRelaysInterval = setInterval(() => {
+          if (this.connected) {
+            this.sendRelayStatus();
+          } else {
+            clearInterval(this.setRelaysInterval);
+          }
+        }, 15000);
       }
     }
-    
-    
+  }
+
+  /**
+   *
+   * @param {SocketMessage} msg
+   */
+  async handleResponseStatus(msg) {
+    msg.params.forEach((param) => {
+      console.log(`Param type: ${param.type}`);
+    });
   }
 
   /**
@@ -72,6 +98,9 @@ class DeviceHandler {
         break;
       case 3:
         this.handleResponseWho(recvMsg);
+        break;
+      case 5:
+        this.handleResponseStatus(recvMsg);
         break;
     }
   }
@@ -111,6 +140,45 @@ class DeviceHandler {
     this.socket.write(buff);
     console.log(`Asking who`);
     console.log(buff);
+  }
+
+  sendRequestStatus() {
+    const requestWhoMsg = new SocketMessage(false);
+    requestWhoMsg.setRequestStatusMsg();
+    const buff = requestWhoMsg.encode();
+    this.socket.write(buff);
+    console.log(`Requesting status`);
+    console.log(buff);
+  }
+
+  /**
+   * 
+   * @param {Relay[]} relays 
+   */
+  sendRelayStatus() {
+    const relayStatusMsg = new SocketMessage(false);
+    relayStatusMsg.setRequestRelaySet();
+    this.relays.forEach((relay) => {
+      const relayParam = new MessageParam(false);
+      relayParam.setRelayData(relay);
+      relayStatusMsg.params.push(relayParam);            
+    });
+    const buff = relayStatusMsg.encode();
+    this.socket.write(buff);
+
+    console.log(`Sending relay status`);
+    console.log(buff);
+  }
+
+  startRequestingStatus() {
+    this.requestStatusInterval = setInterval(() => {
+      if (!this.connected) {
+        console.log("Clearing interval Request status");
+        clearInterval(this.requestStatusInterval);
+      } else {
+        this.sendRequestStatus();
+      }
+    }, 15000);
   }
 }
 

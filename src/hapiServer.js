@@ -10,8 +10,8 @@ import "dotenv/config";
 
 const serverConfig = {
   port: process.env.PORT,
-  host: process.env.HOST
-}
+  host: process.env.HOST,
+};
 
 const initRestServer = async () => {
   const server = Hapi.server({
@@ -27,7 +27,10 @@ const initRestServer = async () => {
     },
   });
 
-  await sequelize.sync({ force: true });
+  await sequelize
+    .sync
+    // ?{ force: true }
+    ();
 
   await server.start();
   console.log("Server running on %s", server.info.uri);

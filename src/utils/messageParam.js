@@ -3,16 +3,23 @@
 // 0x0002 - HUMIDITY_DATA
 // 0x0003 - RELAY_DATA
 
+import { Relay } from "../models/relay.js";
+
 export class MessageParam {
   /**
    *
    * @param {Buffer} buffer
    */
   constructor(buffer) {
-    this.type = this.getParamType(buffer);
-    this.length = this.getParamLength(buffer);
     this.subParams = [];
-    switch (paramType) {
+    if (!buffer) {
+      return;
+    }
+    this.type = this.getParamType(buffer);
+    console.log(`Decoding param type ${this.type}`);
+    this.length = this.getParamLength(buffer);
+
+    switch (this.type) {
       case 0:
         {
           let remainingLength = this.length - 5;
@@ -38,9 +45,9 @@ export class MessageParam {
         break;
       case 3:
         {
-            this.relayId = (buffer[5] >> 1) ;
-            this.relayStatus = (buffer[5] & 0x01);
-            // todo decode each bit by bit            
+          this.relayId = buffer[5] >> 1;
+          this.relayStatus = buffer[5] & 0x01;
+          // todo decode each bit by bit
         }
         break;
     }
@@ -52,8 +59,11 @@ export class MessageParam {
    * @returns
    */
   getParamType(msg) {
+    console.log("Decoding param type");
+    console.log(msg);
+    console.log("Decoding param type");
     if (msg.length >= 5) {
-      return ((msg[1] << 8) | msg[2]);
+      return (msg[1] << 8) | msg[2];
     }
     return -1;
   }
@@ -64,7 +74,30 @@ export class MessageParam {
    * @returns {number}
    */
   getParamLength(msg) {
-    return ((msg[3] << 8) | msg[4]);
+    return (msg[3] << 8) | msg[4];
+  }
+
+  /**
+   *
+   * @param {Relay} relay
+   */
+  setRelayData(relay) {
+    this.type = 3;
+    this.relayId = relay.bus;
+    this.relayStatus = relay.targetState;
+  }
+
+  encode() {
+    console.log(`Encoding param type: ${this.type}`);
+    switch (this.type) {
+      case 3:
+        this.length = 6;
+        let relayData = this.relayId << 1;
+        if (this.relayStatus) {
+          relayData |= 0x01;
+        }
+        return Buffer.from([0x80, 0x00, 0x03, 0x00, 0x06, relayData]);
+        break;
+    }
   }
 }
-

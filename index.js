@@ -1,4 +1,5 @@
 import { initRestServer } from "./src/hapiServer.js";
+import { initModels } from "./src/services/modelInit.js";
 import { initTcpServer } from "./src/socketServer.js";
 
 process.on("unhandledRejection", (err) => {
@@ -6,5 +7,10 @@ process.on("unhandledRejection", (err) => {
   process.exit(1);
 });
 
-initRestServer();
-initTcpServer();
+const run = (async () => {
+  // await initModels();
+  initRestServer();
+  initTcpServer();
+});
+
+run();
