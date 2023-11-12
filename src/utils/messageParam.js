@@ -83,6 +83,7 @@ export class MessageParam {
    */
   setRelayData(relay) {
     this.type = 3;
+    this.length = 6;
     this.relayId = relay.bus;
     this.relayStatus = relay.targetState;
   }

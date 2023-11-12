@@ -60,19 +60,36 @@ export class SocketMessage {
   }
 
   setKeepaliveMsg() {
+    this.length = 5;
     this.type = 0;
   }
 
   setRequestWhoMsg() {
+    this.length = 5;
     this.type = 2;
   }
 
   setRequestStatusMsg() {
+    this.length = 5;
     this.type = 4;
   }
 
   setRequestRelaySet() {
+    this.length = 5;
     this.type = 6;
+  }
+
+  encodeLength() {
+    let length = this.length;
+    this.params.forEach((param) => {
+      console.log(`Param length: ${param.length}`);
+      length += param.length;
+    });
+
+    const buffer = Buffer.alloc(2);
+    buffer.writeUInt16BE(length, 0);
+    console.log(`Calculated length: ${length}`);
+    return buffer;
   }
 
   getRelaysData() {
@@ -127,16 +144,17 @@ export class SocketMessage {
         break;
       case 6:
         {
-          let respBuff = Buffer.from([0x00,0x00,0x06,0x00,0x00]);
+          const length = this.encodeLength();
+          console.log(length);
+          let respBuff = Buffer.from([0x00, 0x00, 0x06, length[0], length[1]]);
           this.params.forEach((param) => {
             respBuff = Buffer.concat([respBuff, param.encode()]);
             // respBuff.join(param.encode());
             console.log(param.encode());
-            
-          })
-          console.log('----');
+          });
+          console.log("----");
           console.log(respBuff);
-          console.log('----');
+          console.log("----");
           return respBuff;
         }
         break;

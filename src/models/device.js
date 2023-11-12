@@ -1,6 +1,9 @@
 import { DataTypes, Model, QueryTypes } from "sequelize";
 import { sequelize } from "../services/database.js";
 
+/**
+ * @extends Model
+ */
 class Device extends Model {
   static async getById(deviceId) {     
     return this.findOne({

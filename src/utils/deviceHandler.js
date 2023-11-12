@@ -46,6 +46,7 @@ class DeviceHandler {
     // Find device
     console.log(`---ASDASDASDASD----`);
     const device = await Device.getById(msg.hwid);
+    this.deviceId = device.id;
     console.log(device);
     if (device != false) {
       const deviceSensors = await Sensor.getByDeviceId(device.id);
@@ -64,9 +65,9 @@ class DeviceHandler {
         this.relays = deviceRelays;
         console.log(this.relays);
 
-        this.setRelaysInterval = setInterval(() => {
+        this.setRelaysInterval = setInterval(async () => {
           if (this.connected) {
-            this.sendRelayStatus();
+            await this.sendRelayStatus();
           } else {
             clearInterval(this.setRelaysInterval);
           }
@@ -152,26 +153,30 @@ class DeviceHandler {
   }
 
   /**
-   * 
-   * @param {Relay[]} relays 
+   *
+   * @param {Relay[]} relays
    */
-  sendRelayStatus() {
-    const relayStatusMsg = new SocketMessage(false);
-    relayStatusMsg.setRequestRelaySet();
-    this.relays.forEach((relay) => {
-      const relayParam = new MessageParam(false);
-      relayParam.setRelayData(relay);
-      relayStatusMsg.params.push(relayParam);            
-    });
-    const buff = relayStatusMsg.encode();
-    this.socket.write(buff);
+  async sendRelayStatus() {
+    const deviceRelays = await Relay.getByDeviceId(this.deviceId);
+    if (deviceRelays != false) {
+      this.relays = deviceRelays;
+      const relayStatusMsg = new SocketMessage(false);
+      relayStatusMsg.setRequestRelaySet();
+      this.relays.forEach((relay) => {
+        const relayParam = new MessageParam(false);
+        relayParam.setRelayData(relay);
+        relayStatusMsg.params.push(relayParam);
+      });
+      const buff = relayStatusMsg.encode();
+      this.socket.write(buff);
 
-    console.log(`Sending relay status`);
-    console.log(buff);
+      console.log(`Sending relay status`);
+      console.log(buff);
+    }
   }
 
   startRequestingStatus() {
-    this.requestStatusInterval = setInterval(() => {
+    this.requestStatusInterval = setInterval(async () => {
       if (!this.connected) {
         console.log("Clearing interval Request status");
         clearInterval(this.requestStatusInterval);
