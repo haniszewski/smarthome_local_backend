@@ -6,6 +6,9 @@ import { DeviceType } from "./models/deviceType.js";
 import { Sensor } from "./models/sensor.js";
 import { Relay } from "./models/relay.js";
 
+import relayRoute from "./routes/temporary/relays.js";
+import updateRelayRoute from "./routes/temporary/updateRelay.js";
+
 import "dotenv/config";
 
 const serverConfig = {
@@ -17,6 +20,11 @@ const initRestServer = async () => {
   const server = Hapi.server({
     port: serverConfig.port,
     host: serverConfig.host,
+    routes: {
+      cors: {
+        origin: ['*'],
+      }
+    }
   });
 
   server.route({
@@ -26,6 +34,9 @@ const initRestServer = async () => {
       return "Hello, World!";
     },
   });
+
+  server.route(relayRoute);
+  server.route(updateRelayRoute);
 
   await sequelize
     .sync
